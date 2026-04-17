@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>ToolHub — Учёт инструментов</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e2937;
+      --text: #f1f5f9;
+      --primary: #6366f1;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 15px; }
+
+    header {
+      text-align: center;
+      padding: 40px 0 20px;
+      position: relative;
+    }
+
+    .logo {
+      width: 72px;
+      height: 72px;
+      border-radius: 20px;
+      box-shadow: 0 15px 40px rgba(99, 102, 241, 0.5);
+    }
+
+    h1 { font-size: 2.5rem; font-weight: 700; margin-top: 10px; }
+
+
+    .profile-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #334155;
+      border: 3px solid #6366f1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .profile-btn:hover { transform: scale(1.1); }
+
+    /* Выпадающее меню */
+    .dropdown {
+      position: absolute;
+      top: 75px;
+      right: 20px;
+      background: #1e2937;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      padding: 10px 0;
+      width: 200px;
+      display: none;
+      z-index: 100;
+    }
+
+    .dropdown.show { display: block; }
+
+    .dropdown button {
+      width: 100%;
+      padding: 14px 20px;
+      text-align: left;
+      background: none;
+      border: none;
+      color: #f1f5f9;
+      font-size: 1.05rem;
+      cursor: pointer;
+    }
+
+    .dropdown button:hover {
+      background: #334155;
+    }
+
+
+    .tabs {
+      display: flex;
+      background: rgba(30, 41, 59, 0.8);
+      border-radius: 22px;
+      padding: 8px;
+      margin: 20px 0;
+      border: 1px solid #334155;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 16px;
+      text-align: center;
+      font-weight: 600;
+      border-radius: 16px;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background: white;
+      color: var(--primary);
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 28px;
+      margin-bottom: 22px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 16px;
+      font-size: 1.08rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 8px 0;
+    }
+
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-warning { background: var(--warning); color: white; }
+
+    .tool {
+      background: #334155;
+      padding: 20px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+    }
+
+    .free { color: var(--success); font-weight: 700; }
+    .busy { color: var(--danger); font-weight: 700; }
+
+    #reader {
+      max-width: 400px;
+      margin: 20px auto;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    .hidden { display: none !important; }
+    .dropdown {
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+}
+
+.profile-btn {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dropdown button {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <img src="logo.png" class="logo" alt="ToolHub">
+    <h1>ToolHub</h1>
+
+
+    <div class="profile-btn" id="profileBtn">👤</div>
+<div class="dropdown" id="profileDropdown">
+  <button id="logoutBtn">Выйти из аккаунта</button>
+</div>
+  </header>
+
+
+  <div class="card" id="authBlock">
+    <h2>Вход в ToolHub</h2>
+    <input id="email" type="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Пароль">
+    <button onclick="login()" class="btn-primary">Войти</button>
+    <button onclick="register()" class="btn-primary" style="background:#475569;">Регистрация</button>
+  </div>
+
+
+  <div id="mainContent" class="hidden">
+    <div id="tabs" class="tabs hidden"></div>
+
+
+    <div id="scanTab">
+      <div class="card">
+        <h2>Мои инструменты</h2>
+        <div id="myToolContent"></div>
+      </div>
+
+      <div class="card">
+        <h2>Сканирование QR-кода</h2>
+        <button onclick="startScanner()" class="btn-success">📷 Отсканировать QR-код</button>
+        <div id="scanner-container" class="hidden">
+          <div id="reader"></div>
+          <button onclick="stopScanner()" style="background:#475569; margin-top:15px;">Закрыть сканер</button>
+        </div>
+      </div>
+    </div>
+
+    
+    <div id="infoTab" class="hidden">
+      <div class="card">
+        <h2>Все инструменты</h2>
+
+        <div id="adminAddPanel" style="display:none; margin-bottom:20px;">
+          <input id="toolName" placeholder="Название нового инструмента" 
+                 style="width:100%; padding:15px; margin-bottom:12px; border-radius:16px; border:1px solid #475569; background:#0f172a; color:white;">
+          <button onclick="addTool()" class="btn-primary">Добавить инструмент</button>
+        </div>
+
+        <input id="search" placeholder="Поиск инструмента..." oninput="searchTools()" 
+               style="width:100%; padding:15px; margin-bottom:15px; border-radius:16px; border:1px solid #475569; background:#0f172a; color:white;">
+        <div id="toolsList"></div>
+      </div>
+
+      <div class="card">
+        <h2>История операций</h2>
+        <button onclick="toggleHistory()" id="historyBtn" class="btn-primary" style="margin-bottom:15px;">
+          Развернуть историю
+        </button>
+        <div id="history" class="hidden" style="max-height:400px; overflow-y:auto;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="script.js"></script>
+</body>
+</html>
