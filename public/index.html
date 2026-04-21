@@ -4,254 +4,664 @@
   <meta charset="UTF-8">
   <title>ToolHub — Учёт инструментов</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="/logo.png">
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0f172a">
-  <link rel="apple-touch-icon" href="logo.png">
-
   <style>
     :root {
-      --bg: #0f172a;
-      --card: #1e2937;
-      --text: #f1f5f9;
-      --primary: #6366f1;
-      --success: #10b981;
-      --danger: #ef4444;
-      --warning: #f59e0b;
+      --bg: #0b1220;
+      --panel: #131c31;
+      --panel-2: #1b2742;
+      --text: #ebf2ff;
+      --muted: #9db0d3;
+      --primary: #6e7cff;
+      --success: #1ea672;
+      --danger: #e25555;
+      --warning: #e7ab39;
+      --border: #2b395a;
+      --shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
+      --anim-dur: 0.85s;
+      --anim-dur-fast: 0.65s;
+      --anim-ease: cubic-bezier(0.22, 1, 0.36, 1);
     }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
+    * { box-sizing: border-box; }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes softPop {
+      from { opacity: 0; transform: scale(0.97); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 0 rgba(110, 124, 255, 0); }
+      50% { box-shadow: 0 0 20px rgba(110, 124, 255, 0.26); }
+      100% { box-shadow: 0 0 0 rgba(110, 124, 255, 0); }
+    }
+    @keyframes shimmerX {
+      0% { background-position: -220% 0; }
+      100% { background-position: 220% 0; }
+    }
     body {
-      font-family: 'Inter', system-ui, sans-serif;
-      background: var(--bg);
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at top, #182646 0%, var(--bg) 45%);
       color: var(--text);
       min-height: 100vh;
     }
-
-    .container { max-width: 1200px; margin: 0 auto; padding: 15px; }
-
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .hidden { display: none !important; }
+    .tab-panel {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.75s var(--anim-ease), transform 0.75s var(--anim-ease);
+    }
+    .tab-panel.is-fading {
+      opacity: 0;
+      transform: translateY(8px);
+    }
     header {
-      text-align: center;
-      padding: 40px 0 20px;
-      position: relative;
-    }
-
-    .logo {
-      width: 72px;
-      height: 72px;
-      border-radius: 20px;
-      box-shadow: 0 15px 40px rgba(99, 102, 241, 0.5);
-    }
-
-    h1 { font-size: 2.5rem; font-weight: 700; margin-top: 10px; }
-
-
-    .profile-btn {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: #334155;
-      border: 3px solid #6366f1;
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      cursor: pointer;
-      transition: all 0.3s;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
     }
-
-    .profile-btn:hover { transform: scale(1.1); }
-
-    /* Выпадающее меню */
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      box-shadow: 0 8px 25px rgba(110, 124, 255, 0.4);
+    }
+    .title { font-size: 28px; font-weight: 700; }
+    .profile-menu { position: relative; }
+    .profile-btn {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 10px 14px;
+      cursor: pointer;
+    }
     .dropdown {
       position: absolute;
-      top: 75px;
-      right: 20px;
-      background: #1e2937;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      padding: 10px 0;
-      width: 200px;
-      display: none;
-      z-index: 100;
+      top: 44px;
+      right: 0;
+      min-width: 190px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      padding: 8px;
+      display: block;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateY(-8px);
+      transition: opacity 0.65s var(--anim-ease), transform 0.65s var(--anim-ease), visibility 0.65s var(--anim-ease);
+      z-index: 30;
     }
-
-    .dropdown.show { display: block; }
-
+    .dropdown.show {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
     .dropdown button {
       width: 100%;
-      padding: 14px 20px;
+      margin: 0;
       text-align: left;
-      background: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
       border: none;
-      color: #f1f5f9;
-      font-size: 1.05rem;
+      padding: 10px;
       cursor: pointer;
     }
-
-    .dropdown button:hover {
-      background: #334155;
-    }
-
-
-    .tabs {
-      display: flex;
-      background: rgba(30, 41, 59, 0.8);
-      border-radius: 22px;
-      padding: 8px;
-      margin: 20px 0;
-      border: 1px solid #334155;
-    }
-
-    .tab {
-      flex: 1;
-      padding: 16px;
-      text-align: center;
-      font-weight: 600;
-      border-radius: 16px;
-      cursor: pointer;
-    }
-
-    .tab.active {
-      background: white;
-      color: var(--primary);
-    }
-
+    .dropdown button:hover { background: rgba(255,255,255,0.06); }
     .card {
-      background: var(--card);
-      border-radius: 24px;
-      padding: 28px;
-      margin-bottom: 22px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+      background: linear-gradient(180deg, var(--panel), #101a2e);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+      margin-bottom: 16px;
+      animation: fadeSlideIn var(--anim-dur) var(--anim-ease) both;
     }
-
-    button {
-      width: 100%;
-      padding: 16px;
-      border: none;
-      border-radius: 16px;
-      font-size: 1.08rem;
-      font-weight: 600;
+    #infoTab {
+      display: grid;
+      gap: 14px;
+    }
+    .card h2 { margin-top: 0; margin-bottom: 12px; }
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .tabs.admin-tabs {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .tab {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 12px;
       cursor: pointer;
-      margin: 8px 0;
+      text-align: center;
+      font-weight: 700;
+      transition: transform var(--anim-dur-fast) var(--anim-ease), background var(--anim-dur) var(--anim-ease), border-color var(--anim-dur) var(--anim-ease);
     }
-
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-success { background: var(--success); color: white; }
-    .btn-danger { background: var(--danger); color: white; }
-    .btn-warning { background: var(--warning); color: white; }
-
-    .tool {
-      background: #334155;
-      padding: 20px;
-      border-radius: 20px;
-      margin-bottom: 14px;
+    .tab.active { background: var(--primary); border-color: transparent; }
+    .tab.tab-print {
+      background: linear-gradient(180deg, #f0b44b, #dc9830);
+      border-color: transparent;
+      color: #1a1200;
     }
-
-    .free { color: var(--success); font-weight: 700; }
-    .busy { color: var(--danger); font-weight: 700; }
-
-    #reader {
-      max-width: 400px;
-      margin: 20px auto;
-      border-radius: 22px;
+    .tab.tab-print:hover {
+      filter: brightness(1.02);
+    }
+    .tab:hover { transform: translateY(-1px); }
+    input, select, textarea, button {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      background: var(--panel-2);
+      color: var(--text);
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    textarea { min-height: 84px; resize: vertical; }
+    button {
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform var(--anim-dur-fast) var(--anim-ease), filter var(--anim-dur-fast) var(--anim-ease), background var(--anim-dur-fast) var(--anim-ease), border-color var(--anim-dur-fast) var(--anim-ease);
+    }
+    button:hover { transform: translateY(-1px); filter: brightness(1.04); }
+    button:active { transform: translateY(0); }
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    select:focus-visible {
+      outline: none;
+      border-color: #6e7cff;
+      box-shadow: 0 0 0 2px rgba(110, 124, 255, 0.5);
+    }
+    .btn-primary { background: var(--primary); border-color: transparent; }
+    .btn-success { background: var(--success); border-color: transparent; }
+    .btn-danger { background: var(--danger); border-color: transparent; }
+    .btn-warning { background: var(--warning); border-color: transparent; color: #1a1200; }
+    .btn-muted { background: #2e3c5d; }
+    .btn-inline { width: auto; margin: 0; padding: 8px 10px; font-size: 13px; }
+    #reader { max-width: 380px; margin: 8px auto 0; border-radius: 12px; overflow: hidden; }
+    .storage-accordion {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 10px;
       overflow: hidden;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      transition: border-color var(--anim-dur) var(--anim-ease), transform var(--anim-dur) var(--anim-ease);
+      background: linear-gradient(180deg, #15223d, #111b31);
     }
-
-    .hidden { display: none !important; }
-    .dropdown {
-  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
-}
-
-.profile-btn {
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.dropdown button {
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
+    .storage-accordion:hover { border-color: #48649a; transform: translateY(-1px); }
+    .storage-header {
+      background: #1a2948;
+      padding: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background var(--anim-dur) var(--anim-ease);
+    }
+    .storage-header:hover { background: #22345a; }
+    .storage-name {
+      position: relative;
+      background: linear-gradient(90deg, #dce7ff 15%, #ffffff 35%, #dce7ff 55%);
+      background-size: 220% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: shimmerX 2.8s linear infinite;
+    }
+    .storage-count-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #d4def8;
+    }
+    .storage-chevron {
+      font-size: 12px;
+      transition: transform var(--anim-dur) var(--anim-ease);
+      opacity: 0.9;
+    }
+    .storage-accordion.is-open .storage-chevron {
+      transform: rotate(180deg);
+    }
+    .storage-tools {
+      padding: 0 10px;
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease-out, opacity 0.28s ease-out, padding 0.28s ease-out;
+    }
+    .storage-tools.open {
+      padding: 10px;
+      max-height: min(62vh, 560px);
+      opacity: 1;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      transition: max-height 1.35s var(--anim-ease), opacity 1.1s var(--anim-ease), padding 1.1s var(--anim-ease);
+    }
+    .storage-tools.open::-webkit-scrollbar {
+      width: 8px;
+    }
+    .storage-tools.open::-webkit-scrollbar-thumb {
+      background: #3a4f80;
+      border-radius: 999px;
+    }
+    .storage-tools.open::-webkit-scrollbar-track {
+      background: #1a2743;
+      border-radius: 999px;
+    }
+    .tool-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+      background: #19243f;
+      cursor: pointer;
+      transition: transform var(--anim-dur-fast) var(--anim-ease), border-color var(--anim-dur-fast) var(--anim-ease), box-shadow var(--anim-dur-fast) var(--anim-ease);
+      animation: fadeSlideIn var(--anim-dur) var(--anim-ease) both;
+      animation-delay: var(--stagger-delay, 0ms);
+    }
+    .tool-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.24); border-color: #4b6497; }
+    .tool-card.busy { border-color: #5e2e2e; background: #2b1f2a; }
+    .tool-card.free { border-color: #24523f; background: #1c2d30; }
+    .tool-meta { color: var(--muted); font-size: 13px; margin-top: 6px; }
+    #toolsByStorage {
+      display: grid;
+      gap: 10px;
+    }
+    .bulk-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .bulk-item .bulk-name {
+      line-height: 1.25;
+    }
+    input.bulk-print-check {
+      width: 16px;
+      height: 16px;
+      min-width: 16px;
+      margin: 0;
+      padding: 0;
+      accent-color: #b076f3;
+      flex: 0 0 16px;
+    }
+    .tool-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .history-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #16233e;
+      animation: fadeSlideIn var(--anim-dur) var(--anim-ease) both;
+    }
+    dialog {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #0f1a31;
+      color: var(--text);
+      width: min(560px, 94vw);
+      padding: 0;
+    }
+    dialog[open] {
+      animation: softPop 1.05s var(--anim-ease) both;
+    }
+    dialog::backdrop { background: rgba(0,0,0,0.55); }
+    .dialog-body { padding: 16px; }
+    .dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+    .dialog-actions button { width: auto; margin-bottom: 0; }
+    .admin-accordion-header {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .admin-accordion-title {
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.2;
+      text-align: left;
+      margin-bottom: 12px;
+    }
+    .admin-chevron {
+      font-size: 16px;
+      opacity: 0.9;
+      transition: transform var(--anim-dur) var(--anim-ease);
+      margin-left: 10px;
+    }
+    .admin-accordion-content {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 0.35s ease-out, opacity 0.28s ease-out, margin-top 0.28s ease-out;
+      margin-top: 0;
+    }
+    .admin-accordion.is-open .admin-accordion-content {
+      max-height: 1400px;
+      opacity: 1;
+      margin-top: 6px;
+      transition: max-height 2.1s var(--anim-ease), opacity 1.6s var(--anim-ease), margin-top 1.6s var(--anim-ease);
+    }
+    .admin-accordion.is-open .admin-chevron {
+      transform: rotate(90deg);
+    }
+    .print-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .print-item {
+      border: 1px dashed #999;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px;
+      min-height: 95px;
+      background: #fff;
+    }
+    .print-item img { width: 76px; height: 76px; }
+    .print-label { font-size: 10px; color: #111; line-height: 1.2; }
+    @media (max-width: 900px) {
+      .tabs.admin-tabs { grid-template-columns: 1fr; }
+      .print-grid { grid-template-columns: repeat(3, 1fr); }
+      .container { padding: 14px; }
+      .title { font-size: 22px; }
+      .card { padding: 14px; border-radius: 14px; }
+      .storage-header { padding: 10px; }
+      .tool-card { padding: 10px; }
+      .dialog-actions { flex-wrap: wrap; }
+    }
+    @media (max-width: 640px) {
+      body {
+        font-size: 15px;
+      }
+      .container {
+        padding: 10px;
+      }
+      header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+      .brand {
+        justify-content: center;
+      }
+      .logo {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+      }
+      .title {
+        font-size: 20px;
+      }
+      .profile-btn {
+        width: 100%;
+      }
+      .dropdown {
+        right: auto;
+        left: 0;
+        width: 100%;
+      }
+      .tabs,
+      .tabs.admin-tabs {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .tab {
+        padding: 11px 10px;
+      }
+      input, select, textarea, button {
+        min-height: 44px;
+        font-size: 16px;
+        margin-bottom: 8px;
+      }
+      .btn-inline {
+        width: 100%;
+        min-height: 42px;
+      }
+      .tool-row {
+        align-items: flex-start;
+      }
+      .tool-card .tool-row strong {
+        display: inline-block;
+        max-width: calc(100% - 28px);
+        word-break: break-word;
+      }
+      .storage-count-wrap {
+        gap: 6px;
+        font-size: 13px;
+      }
+      .storage-tools.open {
+        max-height: 58vh;
+        padding: 8px;
+      }
+      .tool-meta {
+        font-size: 12px;
+      }
+      .dialog-body {
+        padding: 12px;
+      }
+      .dialog-actions {
+        justify-content: stretch;
+      }
+      .dialog-actions button {
+        width: 100%;
+      }
+      .print-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
   </style>
 </head>
 <body>
-
 <div class="container">
   <header>
-    <img src="logo.png" class="logo" alt="ToolHub">
-    <h1>ToolHub</h1>
-
-
-    <div class="profile-btn" id="profileBtn">👤</div>
-<div class="dropdown" id="profileDropdown">
-  <button id="logoutBtn">Выйти из аккаунта</button>
-</div>
+    <div class="brand">
+      <img
+        src="/logo.png"
+        srcset="/logo.png 1x"
+        sizes="56px"
+        class="logo"
+        alt="ToolHub"
+        loading="eager"
+        decoding="async"
+        onerror="this.onerror=null;this.src='https://static.vecteezy.com/system/resources/previews/008/209/728/non_2x/letter-t-logo-icon-design-template-elements-illustration-vector.jpg';"
+      >
+      <div class="title">ToolHub</div>
+    </div>
+    <div class="profile-menu">
+      <button class="profile-btn" id="profileBtn">Профиль</button>
+      <div class="dropdown" id="profileDropdown">
+        <button id="logoutBtn">Выйти из аккаунта</button>
+      </div>
+    </div>
   </header>
 
-
   <div class="card" id="authBlock">
-    <h2>Вход в ToolHub</h2>
-    <input id="email" type="email" placeholder="Email">
+    <h2>Вход</h2>
+    <input id="email" type="text" placeholder="Логин или Email">
     <input id="password" type="password" placeholder="Пароль">
     <button onclick="login()" class="btn-primary">Войти</button>
-    <button onclick="register()" class="btn-primary" style="background:#475569;">Регистрация</button>
+    <button onclick="register()" class="btn-muted">Регистрация</button>
   </div>
-
 
   <div id="mainContent" class="hidden">
     <div id="tabs" class="tabs hidden"></div>
-
 
     <div id="scanTab">
       <div class="card">
         <h2>Мои инструменты</h2>
         <div id="myToolContent"></div>
       </div>
-
       <div class="card">
         <h2>Сканирование QR-кода</h2>
-        <button onclick="startScanner()" class="btn-success">📷 Отсканировать QR-код</button>
+        <button onclick="startScanner()" class="btn-success">Сканировать</button>
         <div id="scanner-container" class="hidden">
           <div id="reader"></div>
-          <button onclick="stopScanner()" style="background:#475569; margin-top:15px;">Закрыть сканер</button>
+          <button onclick="stopScanner()" class="btn-muted">Закрыть сканер</button>
         </div>
       </div>
     </div>
 
-    
     <div id="infoTab" class="hidden">
-      <div class="card">
-        <h2>Все инструменты</h2>
-
-        <div id="adminAddPanel" style="display:none; margin-bottom:20px;">
-          <input id="toolName" placeholder="Название нового инструмента" 
-                 style="width:100%; padding:15px; margin-bottom:12px; border-radius:16px; border:1px solid #475569; background:#0f172a; color:white;">
-          <button onclick="addTool()" class="btn-primary">Добавить инструмент</button>
+      <div id="adminPanel" class="hidden">
+        <div class="card admin-accordion">
+          <button type="button" class="admin-accordion-header" onclick="toggleAdminBlock(this)">
+            <span class="admin-accordion-title">Управление складами</span>
+            <span class="admin-chevron">▶</span>
+          </button>
+          <div class="admin-accordion-content">
+            <input id="newStorageName" placeholder="Название склада (например, Склад 4)">
+            <button onclick="addStorage()" class="btn-primary">Добавить склад</button>
+            <select id="manageStorageSelect"></select>
+            <input id="renameStorageName" placeholder="Новое имя выбранного склада">
+            <div style="display:flex; gap:8px;">
+              <button onclick="renameStorage()" class="btn-muted btn-inline">Переименовать</button>
+              <button onclick="deleteStorage()" class="btn-danger btn-inline">Удалить склад</button>
+            </div>
+          </div>
         </div>
 
-        <input id="search" placeholder="Поиск инструмента..." oninput="searchTools()" 
-               style="width:100%; padding:15px; margin-bottom:15px; border-radius:16px; border:1px solid #475569; background:#0f172a; color:white;">
-        <div id="toolsList"></div>
+        <div class="card admin-accordion">
+          <button type="button" class="admin-accordion-header" onclick="toggleAdminBlock(this)">
+            <span class="admin-accordion-title">Добавить предмет</span>
+            <span class="admin-chevron">▶</span>
+          </button>
+          <div class="admin-accordion-content">
+            <input id="toolName" placeholder="Название">
+            <textarea id="toolDescription" placeholder="Описание"></textarea>
+            <select id="toolStorage"></select>
+            <button onclick="addTool()" class="btn-primary">Добавить предмет</button>
+          </div>
+        </div>
       </div>
 
-      <div class="card">
-        <h2>История операций</h2>
-        <button onclick="toggleHistory()" id="historyBtn" class="btn-primary" style="margin-bottom:15px;">
-          Развернуть историю
+      <div class="card admin-accordion">
+        <button type="button" class="admin-accordion-header" onclick="toggleAdminBlock(this)">
+          <span class="admin-accordion-title">Все инструменты</span>
+          <span class="admin-chevron">▶</span>
         </button>
-        <div id="history" class="hidden" style="max-height:400px; overflow-y:auto;"></div>
+        <div class="admin-accordion-content">
+          <input id="search" placeholder="Поиск..." oninput="searchTools()">
+          <div id="toolsByStorage"></div>
+        </div>
+      </div>
+
+      <div id="adminHistoryPanel" class="hidden">
+        <div class="card admin-accordion">
+          <button type="button" class="admin-accordion-header" onclick="toggleAdminBlock(this)">
+            <span class="admin-accordion-title">История операций</span>
+            <span class="admin-chevron">▶</span>
+          </button>
+          <div class="admin-accordion-content">
+            <select id="historyFilter" onchange="loadHistory()">
+              <option value="all">Все действия</option>
+              <option value="take">Только взятия</option>
+              <option value="return">Только возвраты</option>
+              <option value="move">Только переносы</option>
+            </select>
+            <div id="history"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
+  <dialog id="toolModal">
+    <div class="dialog-body">
+      <h3 id="toolModalTitle">Информация о предмете</h3>
+      <div id="toolModalContent"></div>
+      <div class="dialog-actions">
+        <button class="btn-muted btn-inline" onclick="closeModal('toolModal')">Закрыть</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="moveModal">
+    <div class="dialog-body">
+      <h3>Перенос предмета</h3>
+      <div id="moveInfo" class="tool-meta"></div>
+      <select id="moveStorageSelect"></select>
+      <div class="dialog-actions">
+        <button class="btn-muted btn-inline" onclick="closeModal('moveModal')">Отмена</button>
+        <button class="btn-primary btn-inline" onclick="confirmMove()">Перенести</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="bulkPrintModal">
+    <div class="dialog-body">
+      <h3>Множественная печать</h3>
+      <select id="qrSizeSelect">
+        <option value="30">Размер QR: 3.0 см</option>
+        <option value="35" selected>Размер QR: 3.5 см</option>
+        <option value="40">Размер QR: 4.0 см</option>
+      </select>
+      <select id="bulkStorageSelect" onchange="renderBulkPrintItems()"></select>
+      <div id="bulkPrintItems" style="max-height:260px; overflow:auto;"></div>
+      <div class="dialog-actions">
+        <button class="btn-muted btn-inline" onclick="closeModal('bulkPrintModal')">Отмена</button>
+        <button class="btn-warning btn-inline" onclick="printSelectedQRCodes()">Распечатать</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="editItemModal">
+    <div class="dialog-body">
+      <h3>Редактировать предмет</h3>
+      <input id="editToolName" placeholder="Название">
+      <textarea id="editToolDescription" placeholder="Описание"></textarea>
+      <select id="editToolStorage"></select>
+      <div class="dialog-actions">
+        <button class="btn-muted btn-inline" onclick="closeModal('editItemModal')">Отмена</button>
+        <button class="btn-primary btn-inline" onclick="saveItemEdit()">Сохранить</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="printArea" class="hidden"></div>
+</div>
 <script type="module" src="script.js"></script>
 </body>
 </html>

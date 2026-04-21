@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /storages/{storageId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /items/{itemId} {
+      allow read: if isSignedIn();
+
+      allow create: if isAdmin()
+        && request.resource.data.name is string
+        && request.resource.data.description is string
+        && request.resource.data.currentStorageId is string
+        && request.resource.data.originalStorageId is string
+        && request.resource.data.status in ['free', 'busy'];
+
+      allow update: if isAdmin()
+        || (
+          isSignedIn()
+          && resource.data.status == 'free'
+          && request.resource.data.status == 'busy'
+          && request.resource.data.holder is string
+          && request.resource.data.currentStorageId == resource.data.currentStorageId
+          && request.resource.data.name == resource.data.name
+          && request.resource.data.description == resource.data.description
+        )
+        || (
+          isSignedIn()
+          && resource.data.holder == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.email
+          && resource.data.status == 'busy'
+          && request.resource.data.status == 'free'
+          && request.resource.data.holder == null
+          && request.resource.data.currentStorageId == resource.data.currentStorageId
+          && request.resource.data.name == resource.data.name
+          && request.resource.data.description == resource.data.description
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    match /history/{historyId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+  }
+}
