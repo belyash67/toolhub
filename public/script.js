@@ -22,7 +22,6 @@ const auth = getAuth(app);
 const ADMIN_EMAIL = "belyash670@gmail.com";
 const ADMIN_LOGIN = "ADMIN";
 const ADMIN_PASSWORD = "130209";
-const LEGACY_ADMIN_EMAIL = "belyash670@gmail.com";
 let currentUser = null;
 let currentUserUid = null;
 let isAdmin = false;
@@ -65,17 +64,19 @@ async function resolveUserRole(user) {
   const userDocRef = doc(db, "users", user.uid);
   const userSnap = await getDoc(userDocRef);
   const userEmail = (user.email || "").toLowerCase();
-  const isLegacyAdminEmail = userEmail === LEGACY_ADMIN_EMAIL.toLowerCase();
+  const isEmailAdmin = userEmail === ADMIN_EMAIL.toLowerCase();
   if (!userSnap.exists()) {
-    await setDoc(userDocRef, { email: user.email || "", isAdmin: false });
-    return false;
+    await setDoc(userDocRef, { email: user.email || "", isAdmin: isEmailAdmin });
+    return isEmailAdmin;
   }
   const data = userSnap.data();
-  if (isLegacyAdminEmail && data.isAdmin === true) {
-    await updateDoc(userDocRef, { isAdmin: false, email: user.email || data.email || "" });
-    return false;
+  if (data.isAdmin !== isEmailAdmin || data.email !== (user.email || data.email || "")) {
+    await updateDoc(userDocRef, {
+      isAdmin: isEmailAdmin,
+      email: user.email || data.email || ""
+    });
   }
-  return Boolean(data.isAdmin);
+  return isEmailAdmin;
 }
 
 async function loadStorages() {
